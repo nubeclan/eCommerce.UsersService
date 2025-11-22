@@ -3,6 +3,7 @@
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
     <File Path="README.md" />
+    <File Path="TUTORIAL.md" />
   </Folder>
   <Project Path="src/eCommerce.UsersService.Api/eCommerce.UsersService.Api.csproj" />
 </Solution>
