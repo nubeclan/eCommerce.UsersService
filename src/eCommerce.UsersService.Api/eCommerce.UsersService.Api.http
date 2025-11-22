@@ -18,8 +18,8 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "email": "adrian.mechato@gmail.com",
-  "password": "adrian123"
+  "email": "angel@nubeclan.com",
+  "password": "nube123"
 }
 
 ### Obtener todos los usuarios
@@ -36,9 +36,9 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "firstName": "Adrian",
-  "lastName": "Mechato Actualizado",
-  "email": "adrian.mechato.updated@gmail.com"
+  "firstName": "Angel",
+  "lastName": "Céspedes Quiroz",
+  "email": "angel_actualizado@nubeclan.com"
 }
 
 ### Eliminar un usuario (reemplaza {userId} con un GUID válido)
