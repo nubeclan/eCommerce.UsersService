@@ -7,21 +7,47 @@ using eCommerce.UsersService.Api.Shared.Bases;
 using FluentValidation;
 using Mapster;
 
-namespace eCommerce.UsersService.Api.Features.Users;
-
+/**
+ * Funcionalidad para actualizar un usuario
+ * 
+ * Implementa el comando para actualizar los datos de un usuario existente.
+ *
+ * @author: Angel Céspedes Quiroz
+ * @Whatsapp: +591 33264587
+ * @Linkedin: https://bo.linkedin.com/in/acq1305
+ *
+ */
 public class UpdateUser
 {
     #region Command
+    /// <summary>
+    /// Comando para actualizar un usuario.
+    /// </summary>
     public sealed class Command : ICommand<bool>
     {
+        /// <summary>
+        /// Identificador único del usuario a actualizar.
+        /// </summary>
         public Guid UserID { get; set; }
+        /// <summary>
+        /// Nuevo nombre del usuario.
+        /// </summary>
         public string FirstName { get; set; } = null!;
+        /// <summary>
+        /// Nuevo apellido del usuario.
+        /// </summary>
         public string LastName { get; set; } = null!;
+        /// <summary>
+        /// Nuevo correo electrónico del usuario.
+        /// </summary>
         public string Email { get; set; } = null!;
     }
     #endregion
 
     #region Validator
+    /// <summary>
+    /// Validador para el comando de actualizar usuario.
+    /// </summary>
     public class Validator : AbstractValidator<Command>
     {
         public Validator()
@@ -46,12 +72,21 @@ public class UpdateUser
     #endregion
 
     #region Handler
+    /// <summary>
+    /// Manejador para el comando de actualizar usuario.
+    /// </summary>
     internal sealed class Handler(ApplicationDbContext context, 
         HandlerExecutor executor) : ICommandHandler<Command, bool>
     {
         private readonly ApplicationDbContext _context = context;
         private readonly HandlerExecutor _executor = executor;
 
+        /// <summary>
+        /// Maneja el comando de actualizar usuario.
+        /// </summary>
+        /// <param name="command">Comando con los nuevos datos del usuario.</param>
+        /// <param name="cancellationToken">Token de cancelación.</param>
+        /// <returns>Respuesta con el resultado de la operación.</returns>
         public async Task<BaseResponse<bool>> Handle(Command command, 
             CancellationToken cancellationToken)
         {
@@ -62,6 +97,12 @@ public class UpdateUser
                 );
         }
 
+        /// <summary>
+        /// Actualiza el usuario de forma asíncrona.
+        /// </summary>
+        /// <param name="command">Comando con los nuevos datos.</param>
+        /// <param name="cancellationToken">Token de cancelación.</param>
+        /// <returns>Respuesta con el resultado.</returns>
         private async Task<BaseResponse<bool>> UpdateUserAsync(Command command,
             CancellationToken cancellationToken)
         {
@@ -99,8 +140,15 @@ public class UpdateUser
     #endregion
 
     #region Endpoint
+    /// <summary>
+    /// Endpoint para actualizar un usuario.
+    /// </summary>
     public class UpdateUserEndpoint : ICarterModule
     {
+        /// <summary>
+        /// Configura las rutas para el endpoint.
+        /// </summary>
+        /// <param name="app">Constructor de rutas de endpoint.</param>
         public void AddRoutes(IEndpointRouteBuilder app)
         {
             app.MapPut("api/users/{userId:guid}", async (

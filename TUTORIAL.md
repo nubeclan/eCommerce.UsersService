@@ -132,3 +132,8 @@ Mapster escanea automáticamente, pero asegúrate de que el mapeo de `User` a `Get
 - Para autenticación, expande `Features\Auth` con JWT (ya implementado).
 
 Esta guía mantiene la consistencia con la arquitectura actual, facilitando la escalabilidad del microservicio.
+
+## Desarrollador
+
+*  [Angel Céspedes Quiroz](https://bo.linkedin.com/in/acq1305)
+*  Correo:  <angel@nubeando.com>

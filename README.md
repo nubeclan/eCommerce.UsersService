@@ -65,3 +65,8 @@ Las migraciones de EF Core están incluidas en `Database/Migrations`. Ejecuta `do
 ### Ejecutar el Proyecto
 1. Asegúrate de tener PostgreSQL corriendo y configura la conexión en `appsettings.json` o `appsettings.Development.json`.
 2. Restaura paquetes: `dotero
+
+## Desarrollador
+
+*  [Angel Céspedes Quiroz](https://bo.linkedin.com/in/acq1305)
+*  Correo:  <angel@nubeando.com>

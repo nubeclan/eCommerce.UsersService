@@ -11,17 +11,39 @@ using BC = BCrypt.Net.BCrypt;
 
 namespace eCommerce.UsersService.Api.Features.Auth;
 
+/**
+ * Funcionalidad para iniciar sesión
+ * 
+ * Implementa la query para autenticar un usuario y generar un token JWT.
+ *
+ * @author: Angel Céspedes Quiroz
+ * @Whatsapp: +591 33264587
+ * @Linkedin: https://bo.linkedin.com/in/acq1305
+ *
+ */
 public class Login
 {
     #region Query
+    /// <summary>
+    /// Query para iniciar sesión.
+    /// </summary>
     public sealed class Query : IQuery<AuthenticationResponse>
     {
+        /// <summary>
+        /// Correo electrónico del usuario.
+        /// </summary>
         public string Email { get; set; } = null!;
+        /// <summary>
+        /// Contraseña del usuario.
+        /// </summary>
         public string Password { get; set; } = null!;
     }
     #endregion
 
     #region Validator
+    /// <summary>
+    /// Validador para la query de login.
+    /// </summary>
     public class Validator : AbstractValidator<Query>
     {
         public Validator()
@@ -41,6 +63,9 @@ public class Login
     #endregion
 
     #region Handler
+    /// <summary>
+    /// Manejador para la query de login.
+    /// </summary>
     internal sealed class Handler(
         ApplicationDbContext context,
         HandlerExecutor executor,
@@ -51,6 +76,12 @@ public class Login
         private readonly HandlerExecutor _executor = executor;
         private readonly IJwtTokenGenerator _jwtTokenGenerator = jwtTokenGenerator;
 
+        /// <summary>
+        /// Maneja la query de login.
+        /// </summary>
+        /// <param name="query">Query con las credenciales.</param>
+        /// <param name="cancellationToken">Token de cancelación.</param>
+        /// <returns>Respuesta con el token JWT.</returns>
         public async Task<BaseResponse<AuthenticationResponse>> Handle(
             Query query, CancellationToken cancellationToken)
         {
@@ -60,6 +91,12 @@ public class Login
                 cancellationToken);
         }
 
+        /// <summary>
+        /// Autentica al usuario de forma asíncrona.
+        /// </summary>
+        /// <param name="query">Query con las credenciales.</param>
+        /// <param name="cancellationToken">Token de cancelación.</param>
+        /// <returns>Respuesta con el token.</returns>
         private async Task<BaseResponse<AuthenticationResponse>> LoginAsync(
             Query query, CancellationToken cancellationToken)
         {
@@ -85,8 +122,8 @@ public class Login
                     return response;
                 }
 
-                var authToken = user.Adapt<AuthenticationResponse>();
-                authToken.Token = _jwtTokenGenerator.GenerateToken(user);
+                var token = _jwtTokenGenerator.GenerateToken(user);
+                var authToken = new AuthenticationResponse(token, user.Email, user.FirstName, user.LastName);
 
                 response.IsSuccess = true;
                 response.Data = authToken;
@@ -104,14 +141,21 @@ public class Login
     #endregion
 
     #region Endpoint
+    /// <summary>
+    /// Endpoint para iniciar sesión.
+    /// </summary>
     public class LoginEndpoint : ICarterModule
     {
+        /// <summary>
+        /// Configura las rutas para el endpoint.
+        /// </summary>
+        /// <param name="app">Constructor de rutas de endpoint.</param>
         public void AddRoutes(IEndpointRouteBuilder app)
         {
             app.MapPost("api/auth/login", async (
-                LoginRequest request,
-                IDispatcher dispatcher,
-                CancellationToken cancellationToken) =>
+                    LoginRequest request,
+                    IDispatcher dispatcher,
+                    CancellationToken cancellationToken) =>
             {
                 var query = request.Adapt<Query>();
                 var response = await dispatcher
@@ -124,15 +168,7 @@ public class Login
             .WithDescription("Autentica un usuario y genera un token JWT para acceder a los recursos protegidos del sistema.")
             .Produces<BaseResponse<AuthenticationResponse>>(StatusCodes.Status200OK)
             .Produces(StatusCodes.Status400BadRequest)
-            .Produces(StatusCodes.Status401Unauthorized)
-            .WithOpenApi(operation =>
-            {
-                operation.Summary = "Iniciar sesión en el sistema";
-                operation.Description = "Endpoint para autenticar usuarios existentes. " +
-                    "Valida las credenciales (email y contraseña) y devuelve un token JWT " +
-                    "junto con la información del usuario si la autenticación es exitosa.";
-                return operation;
-            });
+            .Produces(StatusCodes.Status401Unauthorized);
         }
     }
     #endregion
