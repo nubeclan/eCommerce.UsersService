@@ -21,3 +21,26 @@ Accept: application/json
   "email": "adrian.mechato@gmail.com",
   "password": "adrian123"
 }
+
+### Obtener todos los usuarios
+GET {{eCommerce.UsersService.Api_HostAddress}}api/users
+Accept: application/json
+
+### Obtener un usuario por ID (reemplaza {userId} con un GUID válido, e.g., de la respuesta del registro)
+GET {{eCommerce.UsersService.Api_HostAddress}}api/users/{userId}
+Accept: application/json
+
+### Actualizar un usuario (reemplaza {userId} con un GUID válido)
+PUT {{eCommerce.UsersService.Api_HostAddress}}api/users/{userId}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "firstName": "Adrian",
+  "lastName": "Mechato Actualizado",
+  "email": "adrian.mechato.updated@gmail.com"
+}
+
+### Eliminar un usuario (reemplaza {userId} con un GUID válido)
+DELETE {{eCommerce.UsersService.Api_HostAddress}}api/users/{userId}
+Accept: application/json
