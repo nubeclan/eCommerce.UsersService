@@ -6,41 +6,18 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "firstName": "Angel",
-  "lastName": "Céspedes Quiroz",
-  "email": "angel@nubeclan.com",
-  "password": "nube123"
+  "firstName": "Adrian",
+  "lastName": "Mechato",
+  "email": "adrian.mechato@gmail.com",
+  "password": "adrian123"
 }
 
-### Iniciar sesión
+### Login
 POST {{eCommerce.UsersService.Api_HostAddress}}api/auth/login
 Content-Type: application/json
 Accept: application/json
 
 {
-  "email": "angel@nubeclan.com",
-  "password": "nube123"
+  "email": "adrian.mechato@gmail.com",
+  "password": "adrian123"
 }
-
-### Obtener todos los usuarios
-GET {{eCommerce.UsersService.Api_HostAddress}}api/users
-Accept: application/json
-
-### Obtener un usuario por ID (reemplaza {userId} con un GUID válido)
-GET {{eCommerce.UsersService.Api_HostAddress}}api/users/{userId}
-Accept: application/json
-
-### Actualizar un usuario (reemplaza {userId} con un GUID válido)
-PUT {{eCommerce.UsersService.Api_HostAddress}}api/users/{userId}
-Content-Type: application/json
-Accept: application/json
-
-{
-  "firstName": "Angel",
-  "lastName": "Céspedes Quiroz",
-  "email": "angel_actualizado@nubeclan.com"
-}
-
-### Eliminar un usuario (reemplaza {userId} con un GUID válido)
-DELETE {{eCommerce.UsersService.Api_HostAddress}}api/users/{userId}
-Accept: application/json

@@ -1,24 +1,20 @@
-using Carter;
+﻿using Carter;
 using eCommerce.UsersService.Api.Abstractions.Messaging;
-using eCommerce.UsersService.Api.Contracts.Auth;
+using eCommerce.UsersService.Api.Configurations.Authentication;
+using eCommerce.UsersService.Api.Contracts.Users;
 using eCommerce.UsersService.Api.Database;
-using eCommerce.UsersService.Api.Entities;
 using eCommerce.UsersService.Api.Shared.Bases;
 using FluentValidation;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using BC = BCrypt.Net.BCrypt;
 
 namespace eCommerce.UsersService.Api.Features.Auth;
 
 public class Login
 {
-    #region Command
-    public sealed class Command : ICommand<LoginResponse>
+    #region Query
+    public sealed class Query : IQuery<AuthenticationResponse>
     {
         public string Email { get; set; } = null!;
         public string Password { get; set; } = null!;
@@ -26,7 +22,7 @@ public class Login
     #endregion
 
     #region Validator
-    public class Validator : AbstractValidator<Command>
+    public class Validator : AbstractValidator<Query>
     {
         public Validator()
         {
@@ -34,86 +30,75 @@ public class Login
                 .NotEmpty()
                 .NotNull()
                 .EmailAddress()
-                .WithMessage("El email debe ser v�lido.");
+                .WithMessage("El email debe ser válido.");
 
             RuleFor(x => x.Password)
                 .NotEmpty()
                 .NotNull()
-                .WithMessage("La contrase�a no puede ser nula ni vac�a.");
+                .WithMessage("La contraseña no puede ser nula ni vacía.");
         }
     }
     #endregion
 
     #region Handler
-    internal sealed class Handler(ApplicationDbContext context, 
+    internal sealed class Handler(
+        ApplicationDbContext context,
         HandlerExecutor executor,
-        IConfiguration configuration) : ICommandHandler<Command, LoginResponse>
+        IJwtTokenGenerator jwtTokenGenerator)
+        : IQueryHandler<Query, AuthenticationResponse>
     {
         private readonly ApplicationDbContext _context = context;
         private readonly HandlerExecutor _executor = executor;
-        private readonly IConfiguration _configuration = configuration;
+        private readonly IJwtTokenGenerator _jwtTokenGenerator = jwtTokenGenerator;
 
-        public async Task<BaseResponse<LoginResponse>> Handle(Command command, 
-            CancellationToken cancellationToken)
+        public async Task<BaseResponse<AuthenticationResponse>> Handle(
+            Query query, CancellationToken cancellationToken)
         {
             return await _executor.ExecuteAsync(
-                command,
-                () => LoginAsync(command, cancellationToken),
-                cancellationToken
-                );
+                query,
+                () => LoginAsync(query, cancellationToken),
+                cancellationToken);
         }
 
-        private async Task<BaseResponse<LoginResponse>> LoginAsync(Command command,
-            CancellationToken cancellationToken)
+        private async Task<BaseResponse<AuthenticationResponse>> LoginAsync(
+            Query query, CancellationToken cancellationToken)
         {
-            var response = new BaseResponse<LoginResponse>();
+            var response = new BaseResponse<AuthenticationResponse>();
 
             try
             {
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == command.Email, cancellationToken);
-                if (user == null || !BC.Verify(command.Password, user.Password))
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(
+                    x => x.Email == query.Email, cancellationToken);
+
+                if (user is null)
                 {
                     response.IsSuccess = false;
-                    response.Message = "Credenciales inv�lidas.";
+                    response.Message = "El usuario no existe en la base de datos.";
                     return response;
                 }
 
-                var token = GenerateJwtToken(user);
-                response.Data = new LoginResponse(token, user.Email, user.FirstName, user.LastName);
+                if (!BC.Verify(query.Password, user.Password))
+                {
+                    response.IsSuccess = false;
+                    response.Message = "La contraseña es incorrecta.";
+                    return response;
+                }
+
+                var authToken = user.Adapt<AuthenticationResponse>();
+                authToken.Token = _jwtTokenGenerator.GenerateToken(user);
+
                 response.IsSuccess = true;
-                response.Message = "Inicio de sesi�n exitoso.";
+                response.Data = authToken;
+                response.Message = "Token generado correctamente.";
             }
             catch (Exception ex)
             {
                 response.IsSuccess = false;
-                response.Message = $"Error al iniciar sesi�n: {ex.Message}";
+                response.Message = $"Ocurrió un error al procesar la solicitud: {ex.Message}";
             }
 
             return response;
-        }
-
-        private string GenerateJwtToken(Entities.User user)
-        {
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserID.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim(JwtRegisteredClaimNames.GivenName, user.FirstName),
-                new Claim(JwtRegisteredClaimNames.FamilyName, user.LastName),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-            };
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.Now.AddHours(1),
-                signingCredentials: creds);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
     #endregion
@@ -124,16 +109,29 @@ public class Login
         public void AddRoutes(IEndpointRouteBuilder app)
         {
             app.MapPost("api/auth/login", async (
-                    LoginRequest request,
-                    IDispatcher dispatcher,
-                    CancellationToken cancellationToken
-                ) =>
+                LoginRequest request,
+                IDispatcher dispatcher,
+                CancellationToken cancellationToken) =>
             {
-                var command = request.Adapt<Command>();
+                var query = request.Adapt<Query>();
                 var response = await dispatcher
-                .Dispatch<Command, LoginResponse>(command, cancellationToken);
-
-                return response.IsSuccess ? Results.Ok(response) : Results.Unauthorized();
+                .Dispatch<Query, AuthenticationResponse>(query, cancellationToken);
+                return Results.Ok(response);
+            })
+            .WithName("Login")
+            .WithTags("Authentication")
+            .WithSummary("Iniciar sesión")
+            .WithDescription("Autentica un usuario y genera un token JWT para acceder a los recursos protegidos del sistema.")
+            .Produces<BaseResponse<AuthenticationResponse>>(StatusCodes.Status200OK)
+            .Produces(StatusCodes.Status400BadRequest)
+            .Produces(StatusCodes.Status401Unauthorized)
+            .WithOpenApi(operation =>
+            {
+                operation.Summary = "Iniciar sesión en el sistema";
+                operation.Description = "Endpoint para autenticar usuarios existentes. " +
+                    "Valida las credenciales (email y contraseña) y devuelve un token JWT " +
+                    "junto con la información del usuario si la autenticación es exitosa.";
+                return operation;
             });
         }
     }
